@@ -24,6 +24,8 @@ import org.floens.chan.core.site.http.HttpCall;
 import org.floens.chan.core.site.http.ProgressRequestBody;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -35,10 +37,12 @@ public abstract class MultipartHttpCall extends HttpCall {
     private final MultipartBody.Builder formBuilder;
 
     private HttpUrl url;
+    private Map<String, String> headers;
 
     public MultipartHttpCall(Site site) {
         super(site);
 
+        headers = new HashMap<>();
         formBuilder = new MultipartBody.Builder();
         formBuilder.setType(MultipartBody.FORM);
     }
@@ -60,6 +64,11 @@ public abstract class MultipartHttpCall extends HttpCall {
         return this;
     }
 
+    public MultipartHttpCall header(String name, String value) {
+        headers.put(name, value);
+        return this;
+    }
+
     @Override
     public void setup(
             Request.Builder requestBuilder,
@@ -70,7 +79,14 @@ public abstract class MultipartHttpCall extends HttpCall {
         if (url.port() != 80 && url.port() != 443) {
             r += ":" + url.port();
         }
-        requestBuilder.addHeader("Referer", r);
+
+        for (String key : headers.keySet()) {
+            requestBuilder.addHeader(key, headers.get(key));
+        }
+
+        if (!headers.containsKey("Referer")) {
+            requestBuilder.addHeader("Referer", r);
+        }
         requestBuilder.post(formBuilder.build());
     }
 }
